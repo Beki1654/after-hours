@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>After Hours — Daily Routine</title>
+<style>
+  :root {
+    --bg1: #0A0F1E;
+    --bg2: #12192E;
+    --text: #E8ECF4;
+    --muted: #8B93AE;
+    --muted2: #6B7797;
+    --work: #5B8CDE;
+    --transit: #8B93AE;
+    --study: #E8965B;
+    --sleep: #8B7BC7;
+    --accent-gold: #F2B879;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: linear-gradient(180deg, var(--bg1) 0%, #0D1426 55%, var(--bg2) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'Courier New', Courier, monospace; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 0 60px; }
+  header { padding: 36px 20px 16px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.18em; color: var(--muted2);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  h1 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .progress-row { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .progress-track {
+    flex: 1; height: 6px; border-radius: 999px;
+    background: rgba(255,255,255,0.07); overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--work), var(--transit));
+    transition: width 0.35s ease, background 0.35s ease;
+    width: 0%;
+  }
+  .progress-fill.done { background: linear-gradient(90deg, var(--study), var(--accent-gold)); }
+  .count { font-size: 13px; color: var(--muted); min-width: 42px; text-align: right; }
+  .streak {
+    display: none; align-items: center; gap: 6px; margin-top: 12px;
+    color: var(--study); font-size: 13px; font-weight: 600;
+  }
+  .streak.show { display: flex; }
+  
+  .date-header {
+    padding: 0 20px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .timeline { padding: 4px 20px; }
+  .item { display: flex; align-items: flex-start; gap: 14px; cursor: pointer; }
+  .rail { display: flex; flex-direction: column; align-items: center; width: 20px; }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%; margin-top: 20px;
+    background: transparent; flex-shrink: 0; transition: all 0.25s ease;
+  }
+  .connector {
+    width: 2px; flex: 1; min-height: 40px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  }
+  .card {
+    flex: 1; margin-bottom: 14px; padding: 14px 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    transition: background 0.2s ease, border 0.2s ease;
+  }
+  .card.done { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.08); }
+  
+  .time { 
+    font-size: 14px; 
+    font-weight: 600; 
+    letter-spacing: 0.04em; 
+    margin-bottom: 4px; 
+  }
+  
+  .label { font-size: 15px; font-weight: 500; color: var(--text); }
+  .label.done { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(139,147,174,0.5); }
+  .check {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid rgba(255,255,255,0.18); transition: all 0.2s ease;
+  }
+  .check svg { display: none; }
+  .check.done svg { display: block; }
+
+  /* Controls & Submit Area */
+  .actions-area { 
+    padding: 12px 20px; 
+  }
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+  }
+  .submit-btn.ready {
+    background: linear-gradient(135deg, var(--study) 0%, var(--accent-gold) 100%);
+    color: #0A0F1E;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(232, 150, 91, 0.35);
+  }
+  .submit-btn.submitted {
+    background: rgba(139, 123, 199, 0.15);
+    border: 1px solid rgba(139, 123, 199, 0.3);
+    color: var(--sleep);
+    cursor: default;
+  }
+
+  /* History Section Styling */
+  .history-section {
+    margin: 32px 20px 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .history-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+  .history-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .history-card:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .history-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(232,150,91,0.15);
+    color: var(--accent-gold);
+  }
+  .history-details {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(255,255,255,0.08);
+  }
+  .history-details.show {
+    display: block;
+  }
+  .history-item {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow mono">After Hours</div>
+    <h1>Today's Cycle</h1>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill mono" id="progressFill"></div></div>
+      <div class="count mono" id="countLabel">0/8</div>
+    </div>
+    <div class="streak" id="streakEl">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-1-.5-2-1-2.5.8 2 .5 4-1 5.5a5 5 0 1 1-1-12z"/></svg>
+      <span id="streakText"></span>
+    </div>
+  </header>
+
+  <div class="date-header mono" id="dateHeader">
+    <span>📅</span> <span id="currentDateText"></span>
+  </div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <div class="actions-area">
+    <button class="submit-btn mono" id="submitBtn" onclick="submitCycle()" disabled>Complete 8/8 Tasks</button>
+  </div>
+
+  <div class="history-section">
+    <div class="history-title mono">Past Cycles (Click to inspect)</div>
+    <div id="historyContainer"></div>
+  </div>
+</div>
+
+<script>
+  const PHASES = {
+    work:    { color: '#5B8CDE', glow: 'rgba(91,140,222,0.35)' },
+    transit: { color: '#8B93AE', glow: 'rgba(139,147,174,0.30)' },
+    study:   { color: '#E8965B', glow: 'rgba(232,150,91,0.40)' },
+    sleep:   { color: '#8B7BC7', glow: 'rgba(139,123,199,0.35)' },
+  };
+
+  const TASKS = [
+    { id: 'wake',     time: '11:30',         label: 'Wake up',                 phase: 'sleep' },
+    { id: 'cook',     time: '11:30 – 13:00', label: 'Cook & pack lunch',       phase: 'sleep' },
+    { id: 'commute1', time: '13:00 – 14:00', label: 'Get ready, commute in',   phase: 'transit' },
+    { id: 'work',     time: '14:00 – 23:00', label: 'Work',                    phase: 'work' },
+    { id: 'commute2', time: '23:00 – 01:00', label: 'Commute home',           phase: 'transit' },
+    { id: 'unwind',   time: '01:00 – 02:00', label: 'Dinner, unwind',         phase: 'transit' },
+    { id: 'english',  time: '02:00 – 03:30', label: 'English study',          phase: 'study' },
+    { id: 'forex',    time: '03:30 – 05:00', label: 'Forex trading study',    phase: 'study' },
+  ];
+
+  // Gets date formatted specifically for Africa/Addis_Ababa (Ethiopia Time)
+  function getEthiopiaDateParts(dateObj) {
+    const d = dateObj || new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Africa/Addis_Ababa',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(d);
+    const map = {};
+    parts.forEach(p => map[p.type] = p.value);
+    return map; // { year, month, day }
+  }
+
+  function todayKey(d) {
+    const parts = getEthiopiaDateParts(d);
+    return 'routine:' + parts.year + '-' + parts.month + '-' + parts.day;
+  }
+
+  function dateKeyDaysAgo(n) {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return todayKey(d);
+  }
+
+  function renderDate() {
+    const today = new Date();
+    const options = { 
+      timeZone: 'Africa/Addis_Ababa',
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    };
+    document.getElementById('currentDateText').textContent = today.toLocaleDateString('en-US', options);
+  }
+
+  function loadSet(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return new Set();
+      return new Set(JSON.parse(raw));
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  function saveSet(key, set) {
+    try {
+      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    } catch (e) {
+      console.error('Storage failed', e);
+    }
+  }
+
+  function isCycleSubmitted(key) {
+    return localStorage.getItem(key + ':submitted') === 'true';
+  }
+
+  function setCycleSubmitted(key) {
+    localStorage.setItem(key + ':submitted', 'true');
+  }
+
+  const key = todayKey();
+  let completed = loadSet(key);
+
+  function computeStreak() {
+    let s = 0;
+    for (let i = 1; i <= 365; i++) {
+      const raw = localStorage.getItem(dateKeyDaysAgo(i));
+      if (!raw) break;
+      let arr;
+      try { arr = JSON.parse(raw); } catch (e) { break; }
+      if (arr.length >= TASKS.length) s += 1; else break;
+    }
+    return s;
+  }
+
+  const checkIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A0F1E" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  function render() {
+    renderDate();
+
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+
+    TASKS.forEach((task, i) => {
+      const phase = PHASES[task.phase];
+      const isDone = completed.has(task.id);
+
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.addEventListener('click', () => toggle(task.id));
+
+      const rail = document.createElement('div');
+      rail.className = 'rail';
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.style.background = isDone ? phase.color : 'transparent';
+      dot.style.border = '2px solid ' + phase.color;
+      dot.style.boxShadow = isDone ? '0 0 10px ' + phase.glow : 'none';
+      rail.appendChild(dot);
+      if (i < TASKS.length - 1) {
+        const conn = document.createElement('div');
+        conn.className = 'connector';
+        rail.appendChild(conn);
+      }
+
+      const card = document.createElement('div');
+      card.className = 'card' + (isDone ? ' done' : '');
+
+      const left = document.createElement('div');
+      const time = document.createElement('div');
+      time.className = 'time mono';
+      time.style.color = phase.color;
+      time.textContent = task.time;
+      const label = document.createElement('div');
+      label.className = 'label' + (isDone ? ' done' : '');
+      label.textContent = task.label;
+      left.appendChild(time);
+      left.appendChild(label);
+
+      const check = document.createElement('div');
+      check.className = 'check' + (isDone ? ' done' : '');
+      check.style.background = isDone ? phase.color : 'transparent';
+      check.style.borderColor = isDone ? phase.color : 'rgba(255,255,255,0.18)';
+      check.innerHTML = checkIcon;
+
+      card.appendChild(left);
+      card.appendChild(check);
+      item.appendChild(rail);
+      item.appendChild(card);
+      timeline.appendChild(item);
+    });
+
+    const doneCount = completed.size;
+    const pct = Math.round((doneCount / TASKS.length) * 100);
+    const allDone = doneCount === TASKS.length;
+
+    const fill = document.getElementById('progressFill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('done', allDone);
+    document.getElementById('countLabel').textContent = doneCount + '/' + TASKS.length;
+
+    const streak = computeStreak();
+    const streakEl = document.getElementById('streakEl');
+    streakEl.classList.toggle('show', streak > 0);
+    document.getElementById('streakText').textContent = streak + '-day streak';
+
+    updateSubmitButton(allDone);
+    renderHistory();
+  }
+
+  function updateSubmitButton(allDone) {
+    const btn = document.getElementById('submitBtn');
+    const submitted = isCycleSubmitted(key);
+
+    if (submitted) {
+      btn.textContent = '✓ Cycle Logged — See You Tomorrow';
+      btn.className = 'submit-btn mono submitted';
+      btn.disabled = true;
+    } else if (allDone) {
+      btn.textContent = 'Submit Today\'s Cycle';
+      btn.className = 'submit-btn mono ready';
+      btn.disabled = false;
+    } else {
+      btn.textContent = `Complete ${completed.size}/${TASKS.length} Tasks to Submit`;
+      btn.className = 'submit-btn mono';
+      btn.disabled = true;
+    }
+  }
+
+  function toggle(id) {
+    if (isCycleSubmitted(key)) return;
+    if (completed.has(id)) completed.delete(id);
+    else completed.add(id);
+    saveSet(key, completed);
+    render();
+  }
+
+  function submitCycle() {
+    if (completed.size === TASKS.length) {
+      setCycleSubmitted(key);
+      saveSet(key, completed);
+      window.location.reload();
+    }
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('historyContainer');
+    container.innerHTML = '';
+    
+    let entries = 0;
+
+    for (let i = 1; i <= 365; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const pastKey = todayKey(d);
+      const raw = localStorage.getItem(pastKey);
+      
+      if (raw) {
+        entries++;
+        const completedTaskIds = new Set(JSON.parse(raw));
+        const card = document.createElement('div');
+        card.className = 'history-card';
+
+        const dateStr = d.toLocaleDateString('en-US', { 
+          timeZone: 'Africa/Addis_Ababa',
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        });
+
+        let taskDetailsHTML = TASKS.map(t => {
+          const isTaskDone = completedTaskIds.has(t.id);
+          return `
+            <div class="history-item">
+              <span style="color: ${isTaskDone ? 'var(--study)' : 'var(--muted2)'}">${isTaskDone ? '✓' : '◦'}</span>
+              <span style="${isTaskDone ? 'color: var(--text)' : 'color: var(--muted2); text-decoration: line-through;'}">${t.label}</span>
+              <span class="mono" style="margin-left: auto; font-size: 11px; opacity: 0.7">${t.time}</span>
+            </div>
+          `;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="history-header">
+            <span style="color: var(--text)">${dateStr}</span>
+            <span class="history-status mono">${completedTaskIds.size}/${TASKS.length} Completed</span>
+          </div>
+          <div class="history-details" id="details-${pastKey}">
+            ${taskDetailsHTML}
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          const detailsEl = card.querySelector('.history-details');
+          detailsEl.classList.toggle('show');
+        });
+
+        container.appendChild(card);
+      }
+    }
+
+    if (entries === 0) {
+      container.innerHTML = `<div style="font-size: 13px; color: var(--muted2);">No past history recorded yet.</div>`;
+    }
+  }
+
+  render();
+</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch(err => console.error('Service Worker Failed:', err));
+    });
+  }
+</script>
+</body>
+  
+</body>
+</html>
+  
