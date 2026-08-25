@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>Beki Daily Routine</title>
+<link rel="manifest" href="./manifest.json" />
+<meta name="theme-color" content="#0A0F1E" />
 <style>
   :root {
     --bg1: #0A0F1E;
@@ -27,7 +29,7 @@
     min-height: 100vh;
   }
   .mono { font-family: 'Courier New', Courier, monospace; }
-  .wrap { max-width: 480px; margin: 0 auto; padding: 0 0 60px; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 0 120px; }
   header { padding: 36px 20px 16px; }
   .eyebrow {
     font-size: 12px; letter-spacing: 0.18em; color: var(--muted2);
@@ -100,7 +102,6 @@
   .check svg { display: none; }
   .check.done svg { display: block; }
 
-  /* Controls & Submit Area */
   .actions-area { 
     padding: 12px 20px; 
   }
@@ -131,7 +132,6 @@
     cursor: default;
   }
 
-  /* History Section Styling */
   .history-section {
     margin: 32px 20px 0;
     padding-top: 24px;
@@ -212,7 +212,7 @@
   <div class="timeline" id="timeline"></div>
 
   <div class="actions-area">
-    <button class="submit-btn mono" id="submitBtn" onclick="submitCycle()" disabled>Complete 8/8 Tasks</button>
+    <button class="submit-btn mono" id="submitBtn" onclick="submitCycle()" disabled>Select at least 1 Task</button>
   </div>
 
   <div class="history-section">
@@ -240,7 +240,6 @@
     { id: 'forex',    time: '03:30 – 05:00', label: 'Forex trading study',    phase: 'study' },
   ];
 
-  // Gets date formatted specifically for Africa/Addis_Ababa (Ethiopia Time)
   function getEthiopiaDateParts(dateObj) {
     const d = dateObj || new Date();
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -252,7 +251,7 @@
     const parts = formatter.formatToParts(d);
     const map = {};
     parts.forEach(p => map[p.type] = p.value);
-    return map; // { year, month, day }
+    return map;
   }
 
   function todayKey(d) {
@@ -314,7 +313,7 @@
       if (!raw) break;
       let arr;
       try { arr = JSON.parse(raw); } catch (e) { break; }
-      if (arr.length >= TASKS.length) s += 1; else break;
+      if (arr.length > 0) s += 1; else break;
     }
     return s;
   }
@@ -390,24 +389,25 @@
     streakEl.classList.toggle('show', streak > 0);
     document.getElementById('streakText').textContent = streak + '-day streak';
 
-    updateSubmitButton(allDone);
+    updateSubmitButton();
     renderHistory();
   }
 
-  function updateSubmitButton(allDone) {
+  function updateSubmitButton() {
     const btn = document.getElementById('submitBtn');
     const submitted = isCycleSubmitted(key);
+    const count = completed.size;
 
     if (submitted) {
       btn.textContent = '✓ Cycle Logged — See You Tomorrow';
       btn.className = 'submit-btn mono submitted';
       btn.disabled = true;
-    } else if (allDone) {
-      btn.textContent = 'Submit Today\'s Cycle';
+    } else if (count >= 1) {
+      btn.textContent = `Submit Today's Cycle (${count}/${TASKS.length} Done)`;
       btn.className = 'submit-btn mono ready';
       btn.disabled = false;
     } else {
-      btn.textContent = `Complete ${completed.size}/${TASKS.length} Tasks to Submit`;
+      btn.textContent = 'Select at least 1 Task';
       btn.className = 'submit-btn mono';
       btn.disabled = true;
     }
@@ -422,10 +422,10 @@
   }
 
   function submitCycle() {
-    if (completed.size === TASKS.length) {
+    if (completed.size >= 1) {
       setCycleSubmitted(key);
       saveSet(key, completed);
-      window.location.reload();
+      render();
     }
   }
 
@@ -491,8 +491,7 @@
   }
 
   render();
-</script>
-  <script>
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
@@ -502,7 +501,4 @@
   }
 </script>
 </body>
-  
-</body>
 </html>
-  
