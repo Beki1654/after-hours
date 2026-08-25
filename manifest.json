@@ -1,1 +1,9 @@
+{
+  "name": "Beki Daily Routine",
+  "short_name": "Beki Routine",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0A0F1E",
+  "theme_color": "#0A0F1E"
+}
 
